@@ -342,28 +342,72 @@ func (a *application) handlePageContentRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	pageData := templateData{
-		Page: page,
+	// Stale-while-revalidate: if we have a previously rendered copy, serve it
+	// immediately and refresh in the background. The first request after server
+	// startup falls through to the synchronous render path below.
+	page.cacheMu.Lock()
+	cached := page.cachedContent
+	page.cacheMu.Unlock()
+
+	if cached != nil {
+		page.maybeRefreshContentInBackground()
+		w.Write(cached)
+		return
 	}
 
-	var err error
-	var responseBytes bytes.Buffer
-
-	func() {
-		page.mu.Lock()
-		defer page.mu.Unlock()
-
-		page.updateOutdatedWidgets()
-		err = pageContentTemplate.Execute(&responseBytes, pageData)
-	}()
-
+	content, err := page.renderContent()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	w.Write(responseBytes.Bytes())
+	page.cacheMu.Lock()
+	page.cachedContent = content
+	page.cacheMu.Unlock()
+
+	w.Write(content)
+}
+
+func (p *page) renderContent() ([]byte, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.updateOutdatedWidgets()
+
+	var buf bytes.Buffer
+	if err := pageContentTemplate.Execute(&buf, templateData{Page: p}); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (p *page) maybeRefreshContentInBackground() {
+	p.cacheMu.Lock()
+	if p.isRefreshing {
+		p.cacheMu.Unlock()
+		return
+	}
+	p.isRefreshing = true
+	p.cacheMu.Unlock()
+
+	go func() {
+		defer func() {
+			p.cacheMu.Lock()
+			p.isRefreshing = false
+			p.cacheMu.Unlock()
+		}()
+
+		content, err := p.renderContent()
+		if err != nil {
+			log.Printf("background refresh of page %q failed: %v", p.Slug, err)
+			return
+		}
+
+		p.cacheMu.Lock()
+		p.cachedContent = content
+		p.cacheMu.Unlock()
+	}()
 }
 
 func (a *application) addressOfRequest(r *http.Request) string {
