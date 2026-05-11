@@ -1,5 +1,6 @@
-LABEL org.opencontainers.image.source=https://github.com/amgno/glance
 FROM golang:1.24.3-alpine3.21 AS builder
+
+LABEL org.opencontainers.image.source=https://github.com/amgno/glance
 
 WORKDIR /app
 COPY . /app
