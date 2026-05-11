@@ -89,6 +89,10 @@ type page struct {
 	} `yaml:"columns"`
 	PrimaryColumnIndex int8       `yaml:"-"`
 	mu                 sync.Mutex `yaml:"-"`
+
+	cacheMu       sync.Mutex `yaml:"-"`
+	cachedContent []byte     `yaml:"-"`
+	isRefreshing  bool       `yaml:"-"`
 }
 
 func newConfigFromYAML(contents []byte) (*config, error) {
