@@ -65,6 +65,10 @@ type SystemInfo struct {
 	Mountpoints []MountpointInfo `json:"mountpoints"`
 }
 
+func (info *SystemInfo) SetBootTime(bootTime time.Time) {
+	info.BootTime = timestampJSON{bootTime}
+}
+
 type MountpointInfo struct {
 	Path        string `json:"path"`
 	Name        string `json:"name"`
