@@ -11,6 +11,8 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build .
 
 FROM alpine:3.21
 
+LABEL org.opencontainers.image.source=https://github.com/amgno/glance
+
 WORKDIR /app
 COPY --from=builder /app/glance .
 
