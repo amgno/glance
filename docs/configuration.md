@@ -2390,7 +2390,7 @@ Preview:
 >
 > This widget is currently under development, some features might not function as expected or may change.
 
-To display data from a remote server you need to have the Glance Agent running on that server. You can download the agent from [here](https://github.com/glanceapp/agent), though keep in mind that it is still in development and may not work as expected. Support for other providers such as Glances will be added in the future.
+To display data from a remote server you can use the Glance Agent or a [Beszel](https://github.com/henrygd/beszel) hub. You can download the Glance Agent from [here](https://github.com/glanceapp/agent), though keep in mind that it is still in development and may not work as expected.
 
 In the event that the CPU temperature goes over 80°C, a flame icon will appear next to the CPU. The progress indicators will also turn red (or the equivalent of your negative color) to hopefully grab your attention if anything is unusually high:
 
@@ -2475,18 +2475,47 @@ Whether to hide this mountpoint from the widget.
 ##### Properties for `remote` servers
 | Name | Type | Required | Default |
 | ---- | ---- | -------- | ------- |
+| provider | string | no | glance |
 | url | string | yes |  |
 | token | string | no |  |
 | timeout | string | no | 3s |
+| system-id | string | only for Beszel |  |
+| username | string | only for Beszel without a token |  |
+| password | string | only for Beszel without a token |  |
+
+###### `provider`
+The service to fetch the statistics from. Possible values are `glance` and `beszel`.
 
 ###### `url`
-The URL and port of the server to fetch the statistics from.
+The URL and port of the Glance Agent or Beszel hub to fetch the statistics from.
 
 ###### `token`
-The authentication token to use when fetching the statistics.
+The authentication token to use when fetching the statistics. For Beszel, you can provide a PocketBase user token instead of `username` and `password`.
 
 ###### `timeout`
 The maximum time to wait for a response from the server. The value is a string and must be a number followed by one of s, m, h, d. Example: `10s` for 10 seconds, `1m` for 1 minute, etc
+
+###### `system-id`
+The ID or name of the system in Beszel.
+
+###### `username`
+The email address of a Beszel user with access to the system. The widget uses it to request a PocketBase user token and caches the token for subsequent requests.
+
+###### `password`
+The password of the Beszel user.
+
+Example using Beszel:
+
+```yaml
+- type: server-stats
+  servers:
+    - type: remote
+      provider: beszel
+      url: http://beszel:8090
+      system-id: homelab
+      username: ${BESZEL_USERNAME}
+      password: ${BESZEL_PASSWORD}
+```
 
 ### Repository
 Display general information about a repository as well as a list of the latest open pull requests and issues.
